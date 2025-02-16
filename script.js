@@ -4,31 +4,38 @@ async function getWeather() {
         document.getElementById("weatherResult").innerHTML = "Please enter a city.";
         return;
     }
-    const apiKey = "aa287ae09ed2486786772935251502";
-    const url = `http://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city},India&aqi=yes`;
+
+    // Construct the URL for the wttr.in API
+    const url = `https://wttr.in/${city}?format=j1`;
+
     const weatherDiv = document.getElementById("weatherResult");
     const lastUpdated = document.getElementById("lastUpdated");
-    
+
     weatherDiv.innerHTML = "Loading...";
     try {
         const response = await fetch(url);
-        const data = await response.json();
-        if (data.error) {
-            weatherDiv.innerHTML = `Error: ${data.error.message}`;
-            lastUpdated.innerText = "";
-            return;
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const { location, current } = data;
+        const data = await response.json();
+
+        // Extract relevant weather information from the JSON response
+        const currentCondition = data.current_condition[0];
+        const location = data.nearest_area[0];
+
         weatherDiv.innerHTML = `
-            <h3>${location.name}, ${location.region}</h3>
-            <p>🌡 Temperature: ${current.temp_c}°C</p>
-            <p>☁ Condition: ${current.condition.text}</p>
-            <img src="${current.condition.icon}" alt="Weather Icon">
-            <p>💨 AQI: ${current.air_quality["us-epa-index"]}</p>
+            <h3>${location.areaName[0].value}, ${location.region[0].value}</h3>
+            <p>🌡 Temperature: ${currentCondition.temp_C}°C</p>
+            <p>☁ Condition: ${currentCondition.weatherDesc[0].value}</p>
+            <img src="${currentCondition.weatherIconUrl[0].value}" alt="Weather Icon">
+            <p>💨 Wind: ${currentCondition.windspeedKmph} km/h</p>
+            <p>💧 Humidity: ${currentCondition.humidity}%</p>
         `;
-        lastUpdated.innerText = `Last Updated: ${current.last_updated}`;
+
+        // Update the last updated time
+        lastUpdated.innerText = `Last Updated: ${currentCondition.localObsDateTime}`;
     } catch (error) {
-        weatherDiv.innerHTML = "Error fetching data!";
+        weatherDiv.innerHTML = `Error fetching data: ${error.message}`;
         lastUpdated.innerText = "";
     }
 }
